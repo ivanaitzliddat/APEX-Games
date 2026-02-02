@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(python:*)",
+      "Bash(pip install:*)"
+    ]
+  }
+}

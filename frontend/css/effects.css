@@ -1,0 +1,144 @@
+/* Win/Loss Effects */
+
+@keyframes correctPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0.3; transform: scale(0.95); }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Win glow effect */
+.win-glow {
+    animation: winGlow 1s ease;
+    position: relative;
+}
+
+.win-glow::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 16px;
+    background: linear-gradient(45deg, var(--success), transparent, var(--success));
+    opacity: 0;
+    animation: glowPulse 1.5s ease 2;
+    z-index: -1;
+}
+
+@keyframes winGlow {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes glowPulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.3; }
+}
+
+/* Loss shake and fade */
+.loss-effect {
+    animation: shake 0.5s ease, fadeOut 0.8s ease 0.5s forwards;
+}
+
+/* Confetti-like celebration */
+.celebration {
+    position: relative;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    animation: confettiFall 2s ease forwards;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100%) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* Trophy animation */
+.trophy-container {
+    text-align: center;
+    animation: trophyAppear 0.8s ease;
+}
+
+.trophy {
+    font-size: 64px;
+    animation: trophyBounce 0.6s ease 0.3s;
+}
+
+@keyframes trophyAppear {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes trophyBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Eliminated overlay */
+.eliminated-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeInOverlay 0.5s ease;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.eliminated-overlay .message {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--danger);
+    margin-bottom: 8px;
+}
+
+.eliminated-overlay .sub-message {
+    font-size: 14px;
+    color: var(--hint);
+}
+
+/* Status transition */
+.status-transition {
+    animation: slideUp 0.3s ease;
+}

@@ -1,0 +1,135 @@
+/* Card Component Styles */
+.card {
+    width: var(--card-width);
+    height: var(--card-height);
+    perspective: 800px;
+    cursor: default;
+    flex-shrink: 0;
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s ease;
+    transform-style: preserve-3d;
+}
+
+.card.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card-front,
+.card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Card back */
+.card-back {
+    background: linear-gradient(135deg, #1a1a4e, #2d2d6e);
+    border: 2px solid #3d3d8e;
+}
+
+.card-back::before {
+    content: '';
+    width: 60%;
+    height: 75%;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 4px,
+        rgba(255, 255, 255, 0.05) 4px,
+        rgba(255, 255, 255, 0.05) 8px
+    );
+}
+
+/* Card front */
+.card-front {
+    transform: rotateY(180deg);
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 6px;
+}
+
+.card-front.red {
+    color: #e94560;
+}
+
+.card-front.black {
+    color: #1a1a2e;
+}
+
+.card-rank {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.card-suit-icon {
+    font-size: 28px;
+    line-height: 1;
+    margin: 4px 0;
+}
+
+.card-rank-bottom {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    transform: rotate(180deg);
+}
+
+/* Card reveal animation */
+.card.revealing {
+    animation: cardBounce 0.3s ease forwards;
+}
+
+@keyframes cardBounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Small card for reference display */
+.card.small {
+    --card-width: 56px;
+    --card-height: 78px;
+}
+
+.card.small .card-rank {
+    font-size: 14px;
+}
+
+.card.small .card-suit-icon {
+    font-size: 20px;
+}
+
+.card.small .card-rank-bottom {
+    font-size: 14px;
+}
+
+/* Card dealing animation */
+.card.dealing {
+    animation: dealIn 0.4s ease forwards;
+}
+
+@keyframes dealIn {
+    from {
+        transform: translateY(-40px) scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
