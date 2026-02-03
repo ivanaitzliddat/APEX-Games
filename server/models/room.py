@@ -7,6 +7,7 @@ class Player:
     telegram_id: int
     name: str
     is_host: bool = False
+    is_playing: bool = True  # Host can choose to observe only
 
 
 @dataclass
@@ -31,7 +32,7 @@ class Room:
             "drinks_mode": self.drinks_mode,
             "started": self.started,
             "players": [
-                {"telegram_id": p.telegram_id, "name": p.name, "is_host": p.is_host}
+                {"telegram_id": p.telegram_id, "name": p.name, "is_host": p.is_host, "is_playing": p.is_playing}
                 for p in self.players.values()
             ],
             "player_count": self.player_count,

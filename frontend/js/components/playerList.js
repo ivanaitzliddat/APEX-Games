@@ -6,7 +6,7 @@ const PlayerListComponent = {
      * Render a player list inside a container
      */
     render(container, players, options = {}) {
-        const { showDrinks = false, showStatus = true } = options;
+        const { showDrinks = false, showStatus = true, showPlayingStatus = false } = options;
         container.innerHTML = '';
 
         players.forEach(player => {
@@ -21,6 +21,16 @@ const PlayerListComponent = {
                     statusHtml = '<span class="player-status status-locked">Locked In</span>';
                 } else {
                     statusHtml = '<span class="player-status status-waiting">Choosing...</span>';
+                }
+            }
+
+            // Show observer badge in lobby
+            console.log('PlayerListComponent - player:', player.name, 'showPlayingStatus:', showPlayingStatus, 'is_playing:', player.is_playing);
+            if (showPlayingStatus) {
+                if (player.is_playing === false) {
+                    statusHtml = '<span class="player-status status-observer">Observer</span>';
+                } else {
+                    statusHtml = '<span class="player-status status-playing">Playing</span>';
                 }
             }
 

@@ -13,19 +13,22 @@ from server.models.events import EventType, make_event
 class RideTheBusGame(BaseGame):
     game_id = "ride_the_bus"
     display_name = "Ride the Bus"
-    min_players = 2
-    max_players = 20
+    min_players = 1
+    max_players = 100
     description = "4-phase card guessing game. Survive all 4 rounds to win!"
 
     def __init__(self, room):
         super().__init__(room)
         self.deck = Deck()
         self.phase = Phase.RED_BLACK
-        self.alive_players: set[int] = set(room.players.keys())
+        # Only include players who opted to play (not observe-only hosts)
+        self.alive_players: set[int] = set(
+            pid for pid, player in room.players.items() if player.is_playing
+        )
         self.eliminated_players: set[int] = set()
         self.phase_choices: dict[int, str] = {}
         self.revealed_cards: list[dict] = []
-        self.drink_totals: dict[int, int] = {pid: 0 for pid in room.players}
+        self.drink_totals: dict[int, int] = {pid: 0 for pid in self.alive_players}
         self.winners: list[int] = []
 
     async def initialize(self) -> dict:

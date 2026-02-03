@@ -84,13 +84,34 @@ const ResultsView = {
         standingsSection.appendChild(standingsList);
         this.container.appendChild(standingsSection);
 
-        // Close button
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'btn btn-outline';
-        closeBtn.style.cssText = 'margin-top:auto;padding-top:16px';
-        closeBtn.textContent = 'Close';
-        closeBtn.addEventListener('click', () => TG.close());
-        this.container.appendChild(closeBtn);
+        // Button container
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = 'margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:8px';
+
+        // Play Again button
+        const playAgainBtn = document.createElement('button');
+        playAgainBtn.className = 'btn btn-primary';
+        playAgainBtn.textContent = 'Play Again';
+        playAgainBtn.addEventListener('click', () => {
+            // Navigate to landing page to select a new game
+            // Preserve dev mode params if present
+            let url = window.location.origin;
+            const params = new URLSearchParams(window.location.search);
+            const devId = params.get('dev_user_id');
+            const devName = params.get('dev_user_name');
+
+            if (devId) {
+                url += `?dev_user_id=${devId}`;
+                if (devName) {
+                    url += `&dev_user_name=${encodeURIComponent(devName)}`;
+                }
+            }
+
+            window.location.href = url;
+        });
+        btnContainer.appendChild(playAgainBtn);
+
+        this.container.appendChild(btnContainer);
 
         TG.hapticNotification(winners.length > 0 ? 'success' : 'warning');
     },

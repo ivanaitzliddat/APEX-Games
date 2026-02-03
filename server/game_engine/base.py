@@ -6,8 +6,8 @@ class BaseGame(ABC):
 
     game_id: str = ""
     display_name: str = ""
-    min_players: int = 2
-    max_players: int = 20
+    min_players: int = 1
+    max_players: int = 100
     description: str = ""
 
     def __init__(self, room):

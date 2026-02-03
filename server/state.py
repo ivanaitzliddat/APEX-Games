@@ -109,7 +109,9 @@ class RoomManager:
         game_cls = GameRegistry.get(room.game_id)
         if game_cls is None:
             raise ValueError(f"Unknown game: {room.game_id}")
-        if room.player_count < game_cls.min_players:
+        # Count only players who are playing (not observe-only)
+        playing_count = sum(1 for p in room.players.values() if p.is_playing)
+        if playing_count < game_cls.min_players:
             raise ValueError(
                 f"Need at least {game_cls.min_players} players to start"
             )
@@ -160,6 +162,9 @@ class RoomManager:
         room = self.rooms.get(code)
         if room:
             await self.send_to(code, room.host_id, event)
+
+    def get_connections(self, code: str) -> dict[int, WebSocket]:
+        return self.connections.get(code, {})
 
 
 # Singleton instance

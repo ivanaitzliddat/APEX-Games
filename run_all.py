@@ -1,7 +1,8 @@
-"""Development convenience script: runs both bot and server concurrently."""
+"""Runs both bot and server concurrently."""
 
 import asyncio
 import logging
+import os
 
 import uvicorn
 
@@ -17,8 +18,9 @@ async def main():
     # Create bot application
     bot_app = create_bot_app()
 
-    # Create uvicorn server
-    config = uvicorn.Config("server.main:app", host="0.0.0.0", port=8000, log_level="info")
+    # Create uvicorn server (use PORT env var for cloud deployment)
+    port = int(os.environ.get("PORT", 8000))
+    config = uvicorn.Config("server.main:app", host="0.0.0.0", port=port, log_level="info")
     server = uvicorn.Server(config)
 
     # Run both concurrently

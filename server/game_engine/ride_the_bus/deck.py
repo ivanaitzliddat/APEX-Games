@@ -2,8 +2,8 @@ import random
 from dataclasses import dataclass
 
 SUITS = ["hearts", "diamonds", "clubs", "spades"]
-RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
-RANK_VALUES = {r: i for i, r in enumerate(RANKS, start=2)}
+RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+RANK_VALUES = {r: i for i, r in enumerate(RANKS, start=1)}
 
 SUIT_EMOJI = {
     "hearts": "\u2665",

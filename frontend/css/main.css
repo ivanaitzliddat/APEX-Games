@@ -139,6 +139,11 @@ body {
     color: var(--button-text);
 }
 
+.btn-secondary {
+    background: var(--hint);
+    color: var(--bg);
+}
+
 .btn-danger {
     background: var(--danger);
     color: white;
@@ -322,6 +327,16 @@ body {
     text-decoration: line-through;
 }
 
+.player-item .status-observer {
+    background: rgba(100, 149, 237, 0.2);
+    color: #6495ED;
+}
+
+.player-item .status-playing {
+    background: rgba(78, 204, 163, 0.2);
+    color: var(--success);
+}
+
 .player-item.eliminated {
     opacity: 0.5;
 }
@@ -445,4 +460,117 @@ body {
 .lock-progress .label {
     font-size: 12px;
     color: var(--hint);
+}
+
+/* Landing page */
+.landing-header {
+    text-align: center;
+    padding: 24px 0;
+}
+
+.app-title {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--button) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.app-subtitle {
+    font-size: 14px;
+    color: var(--hint);
+    margin-top: 4px;
+}
+
+.landing-section {
+    margin-bottom: 24px;
+}
+
+/* Game grid */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.game-card {
+    background: var(--secondary-bg);
+    border: 2px solid var(--secondary-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-card:active {
+    transform: scale(0.96);
+}
+
+.game-card.selected {
+    border-color: var(--button);
+    background: rgba(51, 144, 236, 0.1);
+}
+
+.game-icon {
+    font-size: 40px;
+    margin-bottom: 8px;
+}
+
+.game-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.game-players {
+    font-size: 12px;
+    color: var(--hint);
+}
+
+/* Room code input */
+.room-input-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.room-code-input {
+    flex: 1;
+    min-width: 0;
+    padding: 14px 12px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-align: center;
+    background: var(--secondary-bg);
+    border: 2px solid var(--secondary-bg);
+    border-radius: var(--radius);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.room-code-input:focus {
+    border-color: var(--button);
+}
+
+.room-code-input::placeholder {
+    letter-spacing: normal;
+    font-weight: 400;
+    color: var(--hint);
+}
+
+.room-input-group .btn {
+    padding: 14px 20px;
+}
+
+/* Create room hint */
+.create-hint {
+    font-size: 12px;
+    color: var(--hint);
+    margin-top: 8px;
+    text-align: center;
 }

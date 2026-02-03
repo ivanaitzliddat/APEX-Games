@@ -76,31 +76,38 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
     )
 
     # Send current game state
-    if room.game_instance:
-        if role == "host":
-            state = room.game_instance.get_state_for_observer()
-        else:
-            state = room.game_instance.get_state_for_player(telegram_id)
-        await websocket.send_text(
-            json.dumps(make_event(EventType.GAME_STATE, **state))
-        )
-    else:
-        # Game hasn't started yet, send lobby state
-        await websocket.send_text(
-            json.dumps(
-                make_event(
-                    EventType.LOBBY_UPDATE,
-                    players=[
-                        {"player_id": p.telegram_id, "name": p.name, "is_host": p.is_host}
-                        for p in room.players.values()
-                    ],
-                    room_code=room_code,
-                    game_id=room.game_id,
-                    drinks_mode=room.drinks_mode,
-                    started=room.started,
-                )
+    try:
+        if room.game_instance:
+            player = room.players.get(telegram_id)
+            # Host who is NOT playing gets observer state
+            if role == "host" and (not player or not player.is_playing):
+                state = room.game_instance.get_state_for_observer()
+            else:
+                state = room.game_instance.get_state_for_player(telegram_id)
+            await websocket.send_text(
+                json.dumps(make_event(EventType.GAME_STATE, **state))
             )
-        )
+        else:
+            # Game hasn't started yet, send lobby state
+            logger.info(f"Sending lobby_update to {telegram_id}")
+            lobby_data = make_event(
+                EventType.LOBBY_UPDATE,
+                players=[
+                    {"player_id": p.telegram_id, "name": p.name, "is_host": p.is_host, "is_playing": getattr(p, 'is_playing', True)}
+                    for p in room.players.values()
+                ],
+                room_code=room_code,
+                game_id=room.game_id,
+                drinks_mode=room.drinks_mode,
+                started=room.started,
+            )
+            logger.info(f"Lobby data: {lobby_data}")
+            await websocket.send_text(json.dumps(lobby_data))
+            logger.info(f"Sent lobby_update to {telegram_id}")
+    except Exception as e:
+        logger.error(f"Error sending initial state to {telegram_id}: {e}")
+        await websocket.close()
+        return
 
     # Message receive loop
     try:
@@ -127,6 +134,27 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
                     # Keep room alive briefly for results viewing
                     pass
 
+            elif msg_type == "toggle_playing" and telegram_id == room.host_id:
+                if not room.started:
+                    host_player = room.players.get(telegram_id)
+                    if host_player:
+                        host_player.is_playing = not host_player.is_playing
+                        # Broadcast updated lobby state
+                        await room_manager.broadcast(
+                            room_code,
+                            make_event(
+                                EventType.LOBBY_UPDATE,
+                                players=[
+                                    {"player_id": p.telegram_id, "name": p.name, "is_host": p.is_host, "is_playing": getattr(p, 'is_playing', True)}
+                                    for p in room.players.values()
+                                ],
+                                room_code=room_code,
+                                game_id=room.game_id,
+                                drinks_mode=room.drinks_mode,
+                                started=room.started,
+                            ),
+                        )
+
             elif msg_type == "start_game" and telegram_id == room.host_id:
                 if not room.started and room.game_instance is None:
                     try:
@@ -136,14 +164,19 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
                             room_code,
                             make_event(EventType.GAME_START, game_id=room.game_id),
                         )
-                        await room_manager.broadcast(room_code, init_event)
 
-                        # Send observer state to host
-                        observer_state = room.game_instance.get_state_for_observer()
-                        await room_manager.send_to_host(
-                            room_code,
-                            make_event(EventType.GAME_STATE, **observer_state),
-                        )
+                        # Send game_state to each player (so they transition from lobby to game view)
+                        for pid, ws_conn in room_manager.get_connections(room_code).items():
+                            player = room.players.get(pid)
+                            # Host who is NOT playing gets observer state
+                            # Host who IS playing gets player state (like other players)
+                            if pid == room.host_id and (not player or not player.is_playing):
+                                state = room.game_instance.get_state_for_observer()
+                            else:
+                                state = room.game_instance.get_state_for_player(pid)
+                            await ws_conn.send_text(
+                                json.dumps(make_event(EventType.GAME_STATE, **state))
+                            )
                     except ValueError as e:
                         await websocket.send_text(
                             json.dumps(make_event(EventType.ERROR, message=str(e)))

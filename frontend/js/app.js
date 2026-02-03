@@ -22,8 +22,10 @@
     const params = new URLSearchParams(window.location.search);
     const roomCode = params.get('room') || '';
 
+    // No room code - show landing page
     if (!roomCode) {
-        document.getElementById('loading').querySelector('p').textContent = 'No room code provided.';
+        showView('landing-view');
+        LandingView.render();
         return;
     }
 
@@ -53,6 +55,7 @@
     });
 
     ws.on('lobby_update', (data) => {
+        console.log('lobby_update received:', data, 'role:', role);
         showView('lobby-view');
         LobbyView.render(data, role === 'host');
     });
@@ -71,7 +74,8 @@
             return;
         }
 
-        if (role === 'host') {
+        // Host who is playing (is_alive) sees player view, otherwise observer view
+        if (role === 'host' && !data.is_alive) {
             showView('observer-view');
             ObserverView.render(data);
         } else {
@@ -81,13 +85,20 @@
     });
 
     ws.on('phase_start', (data) => {
+        console.log('phase_start received:', data);
+        console.log('TG.userId:', TG.userId, 'type:', typeof TG.userId);
+        console.log('alive_players:', data.alive_players);
         gameState = { ...gameState, ...data };
 
-        if (role === 'host') {
+        const isAlive = data.alive_players && data.alive_players.includes(TG.userId);
+        console.log('isAlive:', isAlive, 'role:', role);
+
+        // Host who is not playing sees observer view
+        if (role === 'host' && !isAlive) {
+            console.log('Calling ObserverView.nextPhase');
             ObserverView.nextPhase(data);
         } else {
-            // Only render new phase for alive players
-            const isAlive = data.alive_players && data.alive_players.includes(TG.userId);
+            console.log('Calling GameView.nextPhase');
             const stateForPlayer = {
                 ...data,
                 is_alive: isAlive,
@@ -98,13 +109,16 @@
     });
 
     ws.on('player_locked', (data) => {
-        if (role === 'host') {
+        // Only observer-only host needs this
+        if (role === 'host' && gameState && !gameState.is_alive) {
             ObserverView.onPlayerLocked(data);
         }
     });
 
     ws.on('card_revealed', (data) => {
-        if (role === 'host') {
+        console.log('card_revealed received:', data);
+        // Host who is not playing sees observer view
+        if (role === 'host' && gameState && !gameState.is_alive) {
             ObserverView.showCardReveal(data);
         } else {
             GameView.showCardReveal(data);
@@ -112,12 +126,14 @@
     });
 
     ws.on('elimination', (data) => {
-        if (role === 'host') {
+        console.log('elimination received:', data);
+        if (role === 'host' && gameState && !gameState.is_alive) {
             ObserverView.onElimination(data);
         }
     });
 
     ws.on('game_over', (data) => {
+        console.log('game_over received:', data);
         setTimeout(() => {
             showView('results-view');
             ResultsView.render(data);

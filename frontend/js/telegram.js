@@ -3,10 +3,22 @@
  */
 const TG = {
     webapp: window.Telegram?.WebApp,
+    _devUserId: null,
+    _devUserName: null,
 
     init() {
-        if (!this.webapp) {
+        if (!this.webapp || !this.webapp.initData) {
             console.warn('Telegram WebApp not available - running in dev mode');
+            // Parse dev user from URL params
+            const params = new URLSearchParams(window.location.search);
+            const devId = params.get('dev_user_id');
+            if (devId) {
+                this._devUserId = parseInt(devId, 10);
+                this._devUserName = params.get('dev_user_name') || 'Dev User';
+                console.log('Dev mode: userId set to', this._devUserId, 'userName:', this._devUserName);
+            } else {
+                console.warn('No dev_user_id in URL params');
+            }
             return;
         }
         this.webapp.ready();
@@ -22,10 +34,14 @@ const TG = {
     },
 
     get userId() {
+        // Return dev user ID if in dev mode
+        if (this._devUserId) return this._devUserId;
         return this.user?.id || null;
     },
 
     get userName() {
+        // Return dev user name if in dev mode
+        if (this._devUserName) return this._devUserName;
         const user = this.user;
         if (!user) return 'Dev User';
         return ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Unknown';

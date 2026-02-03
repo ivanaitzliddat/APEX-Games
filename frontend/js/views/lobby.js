@@ -42,8 +42,10 @@ const LobbyView = {
         const players = (data.players || []).map(p => ({
             name: p.name,
             is_host: p.is_host,
+            is_playing: p.is_playing,
         }));
-        PlayerListComponent.render(playerList, players, { showStatus: false });
+        console.log('LobbyView.render - players:', players);
+        PlayerListComponent.render(playerList, players, { showStatus: false, showPlayingStatus: true });
         playersSection.appendChild(playerList);
         this.container.appendChild(playersSection);
 
@@ -51,6 +53,28 @@ const LobbyView = {
         if (isHost) {
             const controls = document.createElement('div');
             controls.style.cssText = 'margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:8px';
+
+            // Find host's playing status
+            const hostPlayer = (data.players || []).find(p => p.is_host);
+            const isPlaying = hostPlayer ? hostPlayer.is_playing : true;
+
+            // Toggle button for playing vs observing
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'btn ' + (isPlaying ? 'btn-secondary' : 'btn-primary');
+            toggleBtn.textContent = isPlaying ? 'Switch to Observer Only' : 'Switch to Player';
+            toggleBtn.id = 'toggle-playing-btn';
+            toggleBtn.addEventListener('click', () => {
+                if (window.gameWs) {
+                    window.gameWs.send({ type: 'toggle_playing' });
+                }
+            });
+            controls.appendChild(toggleBtn);
+
+            // Role indicator
+            const roleIndicator = document.createElement('div');
+            roleIndicator.style.cssText = 'text-align:center;font-size:14px;color:var(--tg-theme-hint-color, #999);margin-bottom:8px';
+            roleIndicator.textContent = isPlaying ? 'You will play in this game' : 'You will observe only';
+            controls.appendChild(roleIndicator);
 
             const startBtn = document.createElement('button');
             startBtn.className = 'btn btn-primary';
