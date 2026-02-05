@@ -1,14 +1,16 @@
 /**
- * Landing view - game selection and room code input
+ * Landing view - game selection, name input, and room code input
  */
 const LandingView = {
     container: null,
     games: [],
     selectedGame: null,
+    pendingRoomCode: null, // Room code to join after name is entered
 
-    async render() {
+    async render(roomCodeToJoin = null) {
         this.container = document.getElementById('landing-view');
         this.container.innerHTML = '';
+        this.pendingRoomCode = roomCodeToJoin;
 
         // App title
         const header = document.createElement('div');
@@ -18,6 +20,26 @@ const LandingView = {
             <p class="app-subtitle">Multiplayer Party Games</p>
         `;
         this.container.appendChild(header);
+
+        // If need name prompt, show name input first
+        if (TG.needsNamePrompt()) {
+            this._renderNameInput();
+            return;
+        }
+
+        // Show welcome message with player name
+        if (TG.playerName) {
+            const welcome = document.createElement('div');
+            welcome.className = 'welcome-message';
+            welcome.innerHTML = `<p>Welcome, <strong>${TG.playerName}</strong>!</p>`;
+            this.container.appendChild(welcome);
+        }
+
+        // If we have a pending room code, show join confirmation
+        if (this.pendingRoomCode) {
+            this._renderJoinConfirmation();
+            return;
+        }
 
         // Fetch available games
         await this._loadGames();
@@ -83,6 +105,91 @@ const LandingView = {
 
         // Bind events
         this._bindEvents();
+    },
+
+    _renderNameInput() {
+        const nameSection = document.createElement('div');
+        nameSection.className = 'landing-section';
+        nameSection.style.marginTop = '24px';
+
+        const title = this.pendingRoomCode ? 'Enter your name to join' : 'Enter your name to play';
+
+        nameSection.innerHTML = `
+            <div class="section-title">${title}</div>
+            <div class="room-input-group" style="margin-top:12px;">
+                <input type="text"
+                       id="player-name-input"
+                       class="room-code-input"
+                       placeholder="Your name"
+                       maxlength="20"
+                       autocomplete="off"
+                       style="text-transform:none;">
+                <button id="set-name-btn" class="btn btn-primary">Continue</button>
+            </div>
+        `;
+        this.container.appendChild(nameSection);
+
+        // Focus the input
+        setTimeout(() => {
+            document.getElementById('player-name-input')?.focus();
+        }, 100);
+
+        // Bind name input events
+        const nameInput = document.getElementById('player-name-input');
+        const setNameBtn = document.getElementById('set-name-btn');
+
+        const submitName = () => {
+            const name = nameInput.value.trim();
+            if (name.length >= 2) {
+                TG.setPlayerName(name);
+                TG.hapticImpact('medium');
+                console.log('Name set to:', name);
+
+                // If we have a pending room code, join it
+                if (this.pendingRoomCode) {
+                    this._navigateToRoom(this.pendingRoomCode);
+                } else {
+                    // Re-render to show main menu
+                    this.render();
+                }
+            } else {
+                nameInput.style.borderColor = 'var(--danger)';
+                TG.hapticNotification('error');
+            }
+        };
+
+        setNameBtn.addEventListener('click', submitName);
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitName();
+        });
+        nameInput.addEventListener('input', () => {
+            nameInput.style.borderColor = '';
+        });
+    },
+
+    _renderJoinConfirmation() {
+        const joinSection = document.createElement('div');
+        joinSection.className = 'landing-section';
+        joinSection.style.marginTop = '24px';
+        joinSection.innerHTML = `
+            <div class="section-title">Join Room</div>
+            <p style="text-align:center;margin:16px 0;font-size:24px;font-weight:bold;letter-spacing:4px;">
+                ${this.pendingRoomCode}
+            </p>
+            <button id="confirm-join-btn" class="btn btn-primary" style="width:100%;">Join Game</button>
+            <button id="cancel-join-btn" class="btn btn-outline" style="width:100%;margin-top:8px;">Cancel</button>
+        `;
+        this.container.appendChild(joinSection);
+
+        document.getElementById('confirm-join-btn').addEventListener('click', () => {
+            TG.hapticImpact('medium');
+            this._navigateToRoom(this.pendingRoomCode);
+        });
+
+        document.getElementById('cancel-join-btn').addEventListener('click', () => {
+            this.pendingRoomCode = null;
+            this.render();
+        });
     },
 
     async _loadGames() {
@@ -160,7 +267,7 @@ const LandingView = {
         joinBtn.addEventListener('click', () => {
             const code = roomCodeInput.value.trim();
             if (code.length > 0) {
-                this._joinRoom(code);
+                this._navigateToRoom(code);
             }
         });
 
@@ -169,7 +276,7 @@ const LandingView = {
             if (e.key === 'Enter') {
                 const code = roomCodeInput.value.trim();
                 if (code.length > 0) {
-                    this._joinRoom(code);
+                    this._navigateToRoom(code);
                 }
             }
         });
@@ -182,24 +289,20 @@ const LandingView = {
         });
     },
 
-    _joinRoom(code) {
+    _navigateToRoom(code) {
         TG.hapticImpact('medium');
-
-        // Build URL with room code and dev params
         let url = `${window.location.origin}?room=${code}`;
 
-        // Preserve dev mode params if present
-        const params = new URLSearchParams(window.location.search);
-        const devId = params.get('dev_user_id');
-        const devName = params.get('dev_user_name');
-
-        if (devId) {
-            url += `&dev_user_id=${devId}`;
-            if (devName) {
-                url += `&dev_user_name=${encodeURIComponent(devName)}`;
+        // Add session_id and player_name params if in session mode
+        // This ensures consistency even if sessionStorage fails
+        if (!TG.isInTelegram) {
+            url += `&session_id=${encodeURIComponent(TG.sessionId)}`;
+            if (TG.playerName) {
+                url += `&player_name=${encodeURIComponent(TG.playerName)}`;
             }
         }
 
+        console.log('Navigating to room:', url);
         window.location.href = url;
     },
 
@@ -210,6 +313,12 @@ const LandingView = {
         createBtn.disabled = true;
         createBtn.textContent = 'Creating...';
 
+        // Use playerId and playerName from TG
+        const hostId = TG.playerId;
+        const hostName = TG.playerName || 'Host';
+
+        console.log('Creating room with hostId:', hostId, 'hostName:', hostName);
+
         try {
             const response = await fetch('/api/rooms', {
                 method: 'POST',
@@ -217,17 +326,27 @@ const LandingView = {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    host_id: TG.userId || Math.floor(Math.random() * 100000),
-                    host_name: TG.userName || 'Host',
+                    host_id: hostId,
+                    host_name: hostName,
                     game_id: this.selectedGame.id
                 })
             });
 
             if (response.ok) {
                 const data = await response.json();
-                const roomCode = data.room.code;
+                console.log('Room creation response:', JSON.stringify(data));
+                const roomCode = data.room?.code;
+                if (!roomCode) {
+                    console.error('No room code in response:', data);
+                    TG.hapticNotification('error');
+                    createBtn.textContent = 'Create Room';
+                    createBtn.disabled = false;
+                    alert('Server returned invalid room data');
+                    return;
+                }
+                console.log('Room created successfully:', roomCode);
                 TG.hapticNotification('success');
-                this._joinRoom(roomCode);
+                this._navigateToRoom(roomCode);
             } else {
                 const error = await response.json();
                 console.error('Failed to create room:', error);

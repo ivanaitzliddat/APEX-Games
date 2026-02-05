@@ -3,10 +3,14 @@
  */
 const ResultsView = {
     container: null,
+    ws: null,
+    isHost: false,
 
-    render(data) {
+    render(data, ws, isHost) {
         this.container = document.getElementById('results-view');
         this.container.innerHTML = '';
+        this.ws = ws;
+        this.isHost = isHost || false;
 
         const winners = data.winners || [];
         const standings = data.final_standings || [];
@@ -88,13 +92,39 @@ const ResultsView = {
         const btnContainer = document.createElement('div');
         btnContainer.style.cssText = 'margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:8px';
 
-        // Play Again button
-        const playAgainBtn = document.createElement('button');
-        playAgainBtn.className = 'btn btn-primary';
-        playAgainBtn.textContent = 'Play Again';
-        playAgainBtn.addEventListener('click', () => {
+        // Play Again button - available to everyone
+        if (this.ws) {
+            const playAgainBtn = document.createElement('button');
+            playAgainBtn.className = 'btn btn-primary';
+            playAgainBtn.id = 'play-again-btn';
+
+            if (this.isHost) {
+                playAgainBtn.textContent = 'Play Again';
+                playAgainBtn.addEventListener('click', () => {
+                    TG.hapticImpact('medium');
+                    playAgainBtn.textContent = 'Starting...';
+                    playAgainBtn.disabled = true;
+                    this.ws.send({ type: 'reset_game' });
+                });
+            } else {
+                playAgainBtn.textContent = 'Ready to Play Again';
+                playAgainBtn.addEventListener('click', () => {
+                    TG.hapticImpact('light');
+                    playAgainBtn.textContent = 'Waiting for host...';
+                    playAgainBtn.disabled = true;
+                    playAgainBtn.classList.remove('btn-primary');
+                    playAgainBtn.classList.add('btn-outline');
+                });
+            }
+            btnContainer.appendChild(playAgainBtn);
+        }
+
+        // New Game button - goes to landing page
+        const newGameBtn = document.createElement('button');
+        newGameBtn.className = 'btn btn-outline';
+        newGameBtn.textContent = 'Leave Room';
+        newGameBtn.addEventListener('click', () => {
             // Navigate to landing page to select a new game
-            // Preserve dev mode params if present
             let url = window.location.origin;
             const params = new URLSearchParams(window.location.search);
             const devId = params.get('dev_user_id');
@@ -109,7 +139,7 @@ const ResultsView = {
 
             window.location.href = url;
         });
-        btnContainer.appendChild(playAgainBtn);
+        btnContainer.appendChild(newGameBtn);
 
         this.container.appendChild(btnContainer);
 

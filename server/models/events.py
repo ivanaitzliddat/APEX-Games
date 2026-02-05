@@ -13,6 +13,7 @@ class EventType:
     ELIMINATION = "elimination"
     GAME_OVER = "game_over"
     ERROR = "error"
+    PLAYER_LEFT = "player_left"  # Player disconnected/left the game
 
 
 def make_event(event_type: str, **kwargs) -> dict:

@@ -18,9 +18,15 @@
 
     // --- Initialization ---
     TG.init();
+    console.log('TG initialized:');
+    console.log('  isInTelegram:', TG.isInTelegram);
+    console.log('  playerId:', TG.playerId);
+    console.log('  playerName:', TG.playerName);
+    console.log('  needsNamePrompt:', TG.needsNamePrompt());
 
     const params = new URLSearchParams(window.location.search);
     const roomCode = params.get('room') || '';
+    console.log('Room code from URL:', roomCode || '(none)');
 
     // No room code - show landing page
     if (!roomCode) {
@@ -29,21 +35,33 @@
         return;
     }
 
-    // Build WebSocket URL
+    // Have room code but need name - redirect to landing with room code
+    if (TG.needsNamePrompt()) {
+        console.log('Need name prompt, redirecting to landing');
+        showView('landing-view');
+        LandingView.render(roomCode); // Pass room code to show join flow
+        return;
+    }
+
+    // Build WebSocket URL with auth
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = window.location.host;
     let wsUrl = `${wsProtocol}//${wsHost}/ws/${roomCode}`;
 
-    // Add auth
+    // Add auth params
     if (TG.initData) {
+        // Telegram mode: use initData for cryptographic auth
         wsUrl += `?initData=${encodeURIComponent(TG.initData)}`;
+        console.log('Using Telegram auth for WebSocket');
     } else {
-        // Dev mode: use query params for testing
-        const devId = params.get('dev_user_id') || '12345';
-        const devName = params.get('dev_user_name') || 'Dev User';
-        wsUrl += `?dev_user_id=${devId}&dev_user_name=${encodeURIComponent(devName)}`;
+        // Session mode: use session_id + player_name
+        const sessionId = TG.sessionId;
+        const playerName = TG.playerName || 'Player';
+        wsUrl += `?session_id=${encodeURIComponent(sessionId)}&player_name=${encodeURIComponent(playerName)}`;
+        console.log('Using session auth for WebSocket. sessionId:', sessionId, 'name:', playerName);
     }
 
+    console.log('Connecting to WebSocket for room:', roomCode);
     const ws = new GameWebSocket(wsUrl);
     window.gameWs = ws;
 
@@ -70,7 +88,7 @@
 
         if (data.is_finished) {
             showView('results-view');
-            ResultsView.render(data);
+            ResultsView.render(data, ws, role === 'host');
             return;
         }
 
@@ -86,11 +104,13 @@
 
     ws.on('phase_start', (data) => {
         console.log('phase_start received:', data);
-        console.log('TG.userId:', TG.userId, 'type:', typeof TG.userId);
+        const myId = TG.playerId;
+        console.log('My playerId:', myId, 'type:', typeof myId);
         console.log('alive_players:', data.alive_players);
         gameState = { ...gameState, ...data };
 
-        const isAlive = data.alive_players && data.alive_players.includes(TG.userId);
+        // Check if we're alive - handle both number and string IDs
+        const isAlive = data.alive_players && data.alive_players.some(id => String(id) === String(myId));
         console.log('isAlive:', isAlive, 'role:', role);
 
         // Host who is not playing sees observer view
@@ -132,16 +152,37 @@
         }
     });
 
+    ws.on('player_left', (data) => {
+        console.log('player_left received:', data);
+        // Show a brief notification
+        const reason = data.reason === 'disconnected' ? 'disconnected' : 'left the game';
+        console.log(`${data.player_name} ${reason}`);
+        TG.hapticNotification('warning');
+
+        // If in observer view during game, update the player grid
+        if (role === 'host' && gameState && !gameState.is_alive) {
+            // The elimination event will handle updating the observer view
+            // This is just for notification purposes
+        }
+    });
+
     ws.on('game_over', (data) => {
         console.log('game_over received:', data);
         setTimeout(() => {
             showView('results-view');
-            ResultsView.render(data);
+            ResultsView.render(data, ws, role === 'host');
         }, 2500); // Delay to let card reveal sink in
     });
 
     ws.on('error', (data) => {
         console.error('Server error:', data.message);
+        // Show error on the loading view
+        const loadingP = document.querySelector('#loading p');
+        if (loadingP) {
+            loadingP.textContent = data.message || 'An error occurred';
+            loadingP.style.color = 'var(--danger, #e94560)';
+        }
+        showView('loading');
     });
 
     ws.on('_disconnected', () => {

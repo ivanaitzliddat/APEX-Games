@@ -10,6 +10,46 @@
     <link rel="stylesheet" href="css/effects.css">
 </head>
 <body>
+    <!-- Debug panel for Mini App (tap 5 times on title to toggle) -->
+    <div id="debug-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow-y:auto;background:#1a1a2e;border-top:2px solid #e94560;font-family:monospace;font-size:11px;padding:8px;z-index:9999;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <strong style="color:#4ecca3;">Debug Log</strong>
+            <button onclick="document.getElementById('debug-log').innerHTML='';this.blur();" style="background:#e94560;color:white;border:none;padding:2px 8px;border-radius:4px;">Clear</button>
+        </div>
+        <div id="debug-log"></div>
+    </div>
+    <script>
+        // Override console.log to also show in debug panel
+        (function() {
+            const origLog = console.log;
+            const origWarn = console.warn;
+            const origError = console.error;
+            function addToDebug(type, args) {
+                const panel = document.getElementById('debug-log');
+                if (!panel) return;
+                const msg = Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+                const colors = {log: '#eee', warn: '#f0a500', error: '#e94560'};
+                panel.innerHTML += `<div style="color:${colors[type]};margin:2px 0;word-break:break-all;">[${type}] ${msg}</div>`;
+                panel.scrollTop = panel.scrollHeight;
+            }
+            console.log = function() { origLog.apply(console, arguments); addToDebug('log', arguments); };
+            console.warn = function() { origWarn.apply(console, arguments); addToDebug('warn', arguments); };
+            console.error = function() { origError.apply(console, arguments); addToDebug('error', arguments); };
+        })();
+        // Tap 5 times anywhere to toggle debug panel
+        let tapCount = 0, tapTimer;
+        document.addEventListener('click', () => {
+            tapCount++;
+            clearTimeout(tapTimer);
+            tapTimer = setTimeout(() => tapCount = 0, 500);
+            if (tapCount >= 5) {
+                const panel = document.getElementById('debug-panel');
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                tapCount = 0;
+            }
+        });
+    </script>
+
     <div id="app">
         <div id="loading" class="view active">
             <div class="loading-spinner"></div>
@@ -22,16 +62,16 @@
         <div id="results-view" class="view"></div>
     </div>
 
-    <script src="js/telegram.js?v=4"></script>
-    <script src="js/ws.js?v=4"></script>
-    <script src="js/components/card.js?v=4"></script>
-    <script src="js/components/playerList.js?v=4"></script>
-    <script src="js/games/ride_the_bus.js?v=4"></script>
-    <script src="js/views/landing.js?v=4"></script>
-    <script src="js/views/lobby.js?v=4"></script>
-    <script src="js/views/game.js?v=4"></script>
-    <script src="js/views/observer.js?v=4"></script>
-    <script src="js/views/results.js?v=4"></script>
-    <script src="js/app.js?v=4"></script>
+    <script src="js/telegram.js?v=12"></script>
+    <script src="js/ws.js?v=12"></script>
+    <script src="js/components/card.js?v=12"></script>
+    <script src="js/components/playerList.js?v=12"></script>
+    <script src="js/games/ride_the_bus.js?v=12"></script>
+    <script src="js/views/landing.js?v=12"></script>
+    <script src="js/views/lobby.js?v=12"></script>
+    <script src="js/views/game.js?v=12"></script>
+    <script src="js/views/observer.js?v=12"></script>
+    <script src="js/views/results.js?v=12"></script>
+    <script src="js/app.js?v=12"></script>
 </body>
 </html>

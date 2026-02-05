@@ -5,7 +5,9 @@
       "WebFetch(domain:github.com)",
       "Bash(python:*)",
       "Bash(pip install:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(venvScriptspip install -r requirements.txt)",
+      "Bash(\"venv/Scripts/pip.exe\" install -r requirements.txt)"
     ]
   }
 }

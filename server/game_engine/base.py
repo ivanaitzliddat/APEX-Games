@@ -37,3 +37,11 @@ class BaseGame(ABC):
     def is_finished(self) -> bool:
         """Whether the game has concluded."""
         ...
+
+    async def handle_disconnect(self, player_id: int) -> list[dict]:
+        """Handle a player disconnecting mid-game. Return list of events to broadcast.
+
+        Default implementation does nothing. Games should override this to handle
+        disconnections appropriately (e.g., auto-eliminate the player).
+        """
+        return []

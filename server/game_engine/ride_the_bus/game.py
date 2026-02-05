@@ -32,6 +32,18 @@ class RideTheBusGame(BaseGame):
         self.winners: list[int] = []
 
     async def initialize(self) -> dict:
+        # Include players status for observer view
+        players_status = [
+            {
+                "player_id": pid,
+                "player_name": player.name,
+                "name": player.name,  # Alias for frontend compatibility
+                "is_alive": pid in self.alive_players,
+                "has_chosen": False,
+                "drinks": self.drink_totals.get(pid, 0),
+            }
+            for pid, player in self.room.players.items()
+        ]
         return make_event(
             EventType.PHASE_START,
             phase=int(self.phase),
@@ -40,6 +52,10 @@ class RideTheBusGame(BaseGame):
             revealed_cards=self.revealed_cards,
             alive_players=list(self.alive_players),
             total_players=len(self.room.players),
+            players=players_status,  # Include full player data for observer
+            alive_count=len(self.alive_players),
+            locked_count=0,
+            drinks_mode=self.room.drinks_mode,
         )
 
     async def handle_action(self, player_id: int, action: dict) -> list[dict]:
@@ -158,6 +174,18 @@ class RideTheBusGame(BaseGame):
             events.append(self._game_over_event())
         else:
             self.phase = Phase(int(self.phase) + 1)
+            # Include players status for observer view
+            players_status = [
+                {
+                    "player_id": pid,
+                    "player_name": player.name,
+                    "name": player.name,  # Alias for frontend compatibility
+                    "is_alive": pid in self.alive_players,
+                    "has_chosen": False,  # Reset for new phase
+                    "drinks": self.drink_totals.get(pid, 0),
+                }
+                for pid, player in self.room.players.items()
+            ]
             events.append(
                 make_event(
                     EventType.PHASE_START,
@@ -167,6 +195,10 @@ class RideTheBusGame(BaseGame):
                     revealed_cards=self.revealed_cards,
                     alive_players=list(self.alive_players),
                     total_players=len(self.room.players),
+                    players=players_status,  # Include full player data for observer
+                    alive_count=len(self.alive_players),
+                    locked_count=0,
+                    drinks_mode=self.room.drinks_mode,
                 )
             )
 
@@ -249,3 +281,40 @@ class RideTheBusGame(BaseGame):
 
     def is_finished(self) -> bool:
         return self.phase == Phase.FINISHED
+
+    async def handle_disconnect(self, player_id: int) -> list[dict]:
+        """Handle a player disconnecting mid-game - auto-eliminate them."""
+        events = []
+
+        if player_id not in self.alive_players:
+            # Player was already eliminated, nothing to do
+            return events
+
+        player_name = self.room.players[player_id].name if player_id in self.room.players else "Unknown"
+
+        # Remove from alive players
+        self.alive_players.discard(player_id)
+        self.eliminated_players.add(player_id)
+
+        # Remove any pending choice
+        self.phase_choices.pop(player_id, None)
+
+        # Send elimination event for the disconnected player
+        events.append(
+            make_event(
+                EventType.ELIMINATION,
+                eliminated=[{"player_id": player_id, "player_name": player_name, "reason": "disconnected"}],
+                remaining_count=len(self.alive_players),
+            )
+        )
+
+        # Check if game should end (no players left)
+        if len(self.alive_players) == 0:
+            self._end_game()
+            events.append(self._game_over_event())
+        # Check if all remaining alive players have now made their choice
+        elif len(self.phase_choices) >= len(self.alive_players) and len(self.alive_players) > 0:
+            # Everyone remaining has chosen, resolve the phase
+            events.extend(self._resolve_phase())
+
+        return events
