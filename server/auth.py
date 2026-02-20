@@ -1,9 +1,16 @@
 import hashlib
 import hmac
 import json
+import logging
+from datetime import datetime
 from urllib.parse import parse_qs
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from server.config import BOT_TOKEN
+
+logger = logging.getLogger(__name__)
 
 
 def validate_init_data(init_data: str) -> dict | None:
@@ -41,3 +48,47 @@ def validate_init_data(init_data: str) -> dict | None:
         return None
     except Exception:
         return None
+
+
+async def get_or_create_user(
+    db: AsyncSession,
+    telegram_id: int | None = None,
+    session_id: str | None = None,
+    display_name: str = "Unknown",
+) -> "User":
+    """Look up a user by telegram_id or session_id, creating one if not found."""
+    from server.models.db_models import User
+
+    user = None
+
+    if telegram_id is not None:
+        result = await db.execute(select(User).where(User.telegram_id == telegram_id))
+        user = result.scalar_one_or_none()
+        if user:
+            if user.display_name != display_name and display_name != "Unknown":
+                user.display_name = display_name
+                user.updated_at = datetime.utcnow()
+                await db.commit()
+            return user
+    elif session_id:
+        result = await db.execute(select(User).where(User.session_id == session_id))
+        user = result.scalar_one_or_none()
+        if user:
+            if user.display_name != display_name and display_name != "Unknown":
+                user.display_name = display_name
+                user.updated_at = datetime.utcnow()
+                await db.commit()
+            return user
+
+    # Create new user
+    user = User(
+        telegram_id=telegram_id,
+        session_id=session_id if telegram_id is None else None,
+        display_name=display_name,
+        role="user",
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    logger.info(f"Created new user: id={user.id}, telegram_id={telegram_id}, session_id={session_id}, name={display_name}")
+    return user

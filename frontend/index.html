@@ -19,7 +19,6 @@
         <div id="debug-log"></div>
     </div>
     <script>
-        // Override console.log to also show in debug panel
         (function() {
             const origLog = console.log;
             const origWarn = console.warn;
@@ -36,18 +35,6 @@
             console.warn = function() { origWarn.apply(console, arguments); addToDebug('warn', arguments); };
             console.error = function() { origError.apply(console, arguments); addToDebug('error', arguments); };
         })();
-        // Tap 5 times anywhere to toggle debug panel
-        let tapCount = 0, tapTimer;
-        document.addEventListener('click', () => {
-            tapCount++;
-            clearTimeout(tapTimer);
-            tapTimer = setTimeout(() => tapCount = 0, 500);
-            if (tapCount >= 5) {
-                const panel = document.getElementById('debug-panel');
-                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                tapCount = 0;
-            }
-        });
     </script>
 
     <div id="app">
@@ -55,6 +42,19 @@
             <div class="loading-spinner"></div>
             <p>Connecting...</p>
         </div>
+
+        <!-- Platform views -->
+        <div id="home-view" class="view"></div>
+        <div id="games-view" class="view"></div>
+        <div id="calendar-view" class="view"></div>
+        <div id="challenges-view" class="view"></div>
+        <div id="newsletter-view" class="view"></div>
+        <div id="feedback-view" class="view"></div>
+        <div id="feedback-form-view" class="view"></div>
+        <div id="about-view" class="view"></div>
+        <div id="admin-view" class="view"></div>
+
+        <!-- Game session views -->
         <div id="landing-view" class="view"></div>
         <div id="lobby-view" class="view"></div>
         <div id="game-view" class="view"></div>
@@ -62,16 +62,40 @@
         <div id="results-view" class="view"></div>
     </div>
 
-    <script src="js/telegram.js?v=12"></script>
-    <script src="js/ws.js?v=12"></script>
-    <script src="js/components/card.js?v=12"></script>
-    <script src="js/components/playerList.js?v=12"></script>
-    <script src="js/games/ride_the_bus.js?v=12"></script>
-    <script src="js/views/landing.js?v=12"></script>
-    <script src="js/views/lobby.js?v=12"></script>
-    <script src="js/views/game.js?v=12"></script>
-    <script src="js/views/observer.js?v=12"></script>
-    <script src="js/views/results.js?v=12"></script>
-    <script src="js/app.js?v=12"></script>
+    <!-- Bottom Navigation (hidden during game sessions) -->
+    <nav id="bottom-nav" class="bottom-nav" style="display:none;">
+        <a class="nav-home-btn" data-route="home" href="#home">&#x2302;</a>
+    </nav>
+
+    <!-- Core scripts -->
+    <script src="js/telegram.js?v=15"></script>
+    <script src="js/api.js?v=15"></script>
+    <script src="js/ws.js?v=15"></script>
+
+    <!-- Components -->
+    <script src="js/components/card.js?v=15"></script>
+    <script src="js/components/playerList.js?v=15"></script>
+
+    <!-- Game-specific UI -->
+    <script src="js/games/ride_the_bus.js?v=15"></script>
+
+    <!-- Platform views -->
+    <script src="js/views/home.js?v=15"></script>
+    <script src="js/views/games.js?v=15"></script>
+    <script src="js/views/calendar.js?v=15"></script>
+    <script src="js/views/challenges.js?v=15"></script>
+    <script src="js/views/newsletter.js?v=15"></script>
+    <script src="js/views/feedback.js?v=15"></script>
+    <script src="js/views/about.js?v=19"></script>
+
+    <!-- Game session views -->
+    <script src="js/views/landing.js?v=15"></script>
+    <script src="js/views/lobby.js?v=15"></script>
+    <script src="js/views/game.js?v=15"></script>
+    <script src="js/views/observer.js?v=15"></script>
+    <script src="js/views/results.js?v=15"></script>
+
+    <!-- App entry point (must be last) -->
+    <script src="js/app.js?v=15"></script>
 </body>
 </html>

@@ -10,6 +10,8 @@ const TG = {
     _sessionId: null,
     _playerName: null,
     _initialized: false,
+    _userRole: null,
+    _dbUserId: null,
 
     init() {
         if (this._initialized) {
@@ -178,5 +180,42 @@ const TG = {
         try {
             this.webapp?.close();
         } catch (e) { /* ignore */ }
+    },
+
+    get userRole() {
+        return this._userRole || 'guest';
+    },
+
+    get dbUserId() {
+        return this._dbUserId;
+    },
+
+    isAdmin() {
+        return this._userRole === 'admin' || this._userRole === 'owner';
+    },
+
+    isOwner() {
+        return this._userRole === 'owner';
+    },
+
+    async fetchUserInfo() {
+        /**
+         * Call /api/me to get the user's DB record and role.
+         * Must be called after init() and after API is available.
+         */
+        try {
+            const data = await API.get('/api/me');
+            if (data.user) {
+                this._userRole = data.user.role;
+                this._dbUserId = data.user.id;
+                console.log('User info loaded: role=' + this._userRole + ', dbId=' + this._dbUserId);
+            } else {
+                this._userRole = 'guest';
+                console.log('No authenticated user, role=guest');
+            }
+        } catch (e) {
+            console.warn('Failed to fetch user info:', e);
+            this._userRole = 'guest';
+        }
     }
 };
