@@ -12,11 +12,12 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
+logger = logging.getLogger(__name__)
 
 
 async def main():
     port = int(os.environ.get("PORT", 8000))
-    config = uvicorn.Config("server.main:app", host="0.0.0.0", port=port, log_level="info")
+    config = uvicorn.Config("server.main:app", host=os.environ.get("HOST", "127.0.0.1"), port=port, log_level="info")
     server = uvicorn.Server(config)
 
     bot_token = os.environ.get("BOT_TOKEN", "")

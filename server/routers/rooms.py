@@ -1,15 +1,11 @@
-import logging
 from typing import Union
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from server.state import room_manager, SERVER_INSTANCE_ID, SERVER_START_TIME
+from server.state import room_manager
 from server.game_engine.registry import GameRegistry
 
-logger = logging.getLogger(__name__)
-
-import time
 router = APIRouter()
 
 # Player ID can be int (Telegram) or str (session)
@@ -41,45 +37,12 @@ async def list_games():
     return {"games": GameRegistry.list_games()}
 
 
-@router.get("/debug/rooms")
-async def debug_rooms():
-    """Debug endpoint to check current room state."""
-    rooms_info = {}
-    for code, room in room_manager.rooms.items():
-        rooms_info[code] = {
-            "host_id": room.host_id,
-            "player_count": len(room.players),
-            "players": list(room.players.keys()),
-            "started": room.started,
-            "game_id": room.game_id,
-        }
-    return {
-        "server_instance_id": SERVER_INSTANCE_ID,
-        "server_uptime_seconds": int(time.time() - SERVER_START_TIME),
-        "room_count": len(room_manager.rooms),
-        "rooms": rooms_info,
-        "player_room_map": dict(room_manager._player_room),
-    }
-
-
 @router.post("/rooms")
 async def create_room(req: CreateRoomRequest):
-    logger.info(f"=== CREATE ROOM REQUEST === [instance: {SERVER_INSTANCE_ID}]")
-    logger.info(f"  host_id={req.host_id} (type={type(req.host_id).__name__})")
-    logger.info(f"  host_name={req.host_name}")
-    logger.info(f"  game_id={req.game_id}")
-    logger.info(f"  Current rooms BEFORE: {list(room_manager.rooms.keys())}")
-    logger.info(f"  Player-room map BEFORE: {dict(room_manager._player_room)}")
     try:
         room = room_manager.create_room(req.host_id, req.host_name, req.game_id)
-        logger.info(f"  Room created: code={room.code}")
-        logger.info(f"  Current rooms AFTER: {list(room_manager.rooms.keys())}")
-        logger.info(f"  Verify room exists: {room_manager.get_room(room.code) is not None}")
-        response = {"room": room.to_dict()}
-        logger.info(f"  Returning: {response}")
-        return response
+        return {"room": room.to_dict()}
     except ValueError as e:
-        logger.error(f"  Failed to create room: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 

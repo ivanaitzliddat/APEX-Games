@@ -23,6 +23,8 @@ def validate_init_data(init_data: str) -> dict | None:
 
     try:
         parsed = parse_qs(init_data)
+        if any(len(values) != 1 for values in parsed.values()):
+            return None
         received_hash = parsed.pop("hash", [None])[0]
         if not received_hash:
             return None
@@ -40,6 +42,13 @@ def validate_init_data(init_data: str) -> dict | None:
         ).hexdigest()
 
         if not hmac.compare_digest(computed_hash, received_hash):
+            return None
+
+        raw_auth_date = parsed.get("auth_date", [""])[0]
+        if not raw_auth_date.isdecimal():
+            return None
+        age_seconds = datetime.now().timestamp() - int(raw_auth_date)
+        if age_seconds > 86400 or age_seconds < -300:
             return None
 
         user_str = parsed.get("user", [None])[0]
